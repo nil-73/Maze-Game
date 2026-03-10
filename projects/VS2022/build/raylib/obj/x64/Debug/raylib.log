@@ -1,0 +1,22 @@
+﻿  raudio.c
+  rcore.c
+  rmodels.c
+  rglfw.c
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\minwindef.h(60,9): warning C4005: 'MAX_PATH': redefinición de macro
+  (compiling source file '../../../../../../../raylib/raylib/src/rcore.c')
+      C:\raylib\raylib\src\rcore.c(159,17):
+      vea la definición anterior de “MAX_PATH”
+  
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\minwindef.h(130,9): warning C4005: 'APIENTRY': redefinición de macro
+  (compiling source file '../../../../../../../raylib/raylib/src/rcore.c')
+      C:\raylib\raylib\src\external\glfw\include\GLFW\glfw3.h(123,11):
+      vea la definición anterior de “APIENTRY”
+  
+  rshapes.c
+  rtext.c
+  rtextures.c
+  utils.c
+  utils.h
+  Generando código...
+C:\Users\nutin\Downloads\raylib_maze_generator_base\projects\VS2022\\build\raylib\obj\x64\Debug\utils.obj : warning LNK4042: objeto especificado más de una vez; omitidos los sobrantes
+  raylib.vcxproj -> C:\Users\nutin\Downloads\raylib_maze_generator_base\projects\VS2022\build\raylib\bin\x64\Debug\raylib.lib
