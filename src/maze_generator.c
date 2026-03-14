@@ -63,10 +63,10 @@ int main(void)
     position.y = GetScreenHeight()/2 - texMaze.height*MAZE_DRAW_SIZE/2;
     
     Texture2D texBiomes[4] = { 0 };
-    texBiomes[0] = LoadTexture("resources / maze_atlas01.png");
-    texBiomes[1] = LoadTexture("resources / maze_atlas02.png");
-    texBiomes[2] = LoadTexture("resources / maze_atlas03.png");
-    texBiomes[3] = LoadTexture("resources / maze_atlas04.png");
+    texBiomes[0] = LoadTexture("resources/maze_atlas01.png");
+    texBiomes[1] = LoadTexture("resources/maze_atlas02.png");
+    texBiomes[2] = LoadTexture("resources/maze_atlas03.png");
+    texBiomes[3] = LoadTexture("resources/maze_atlas04.png");
     int currentBiome = 0;
     Vector2 mapPosition = {0};
     Vector2 playerCell = {0};
@@ -100,10 +100,11 @@ int main(void)
             seed += 1;
             SetRandomSeed(seed);
             
-            Image maze = GetImageMaze(MAZE_SIZE, MAZE_SIZE, POINT_DENISTY, POINT_DENISTY, 0.4f);
+            Image imMaze = GetImageMaze(MAZE_SIZE, MAZE_SIZE, POINT_DENISTY, POINT_DENISTY, 0.4f);
             
             texMaze = LoadTextureFromImage(imMaze);
         }
+        
         if (IsKeyPressed(KEY_SPACE)) mazeEditMode = !mazeEditMode;
         if (mazeEditMode)
         {
@@ -136,10 +137,10 @@ int main(void)
         {
             Rectangle prevPlayer = player;
             
-            if (IsKeyDown(KEY_UP)) player.y -= (playerSpeed*GetFrameTime());
-            if (IsKeyDown(KEY_DOWN)) player.y += (playerSpeed * GetFrameTime());
-            if (IsKeyDown(KEY_LEFT)) player.x -= (playerSpeed * GetFrameTime());
-            if (IsKeyDown(KEY_RIGHT)) player.x += (playerSpeed * GetFrameTime());
+            if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) player.y -= (playerSpeed * GetFrameTime());
+            if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) player.y += (playerSpeed * GetFrameTime());
+            if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) player.x -= (playerSpeed * GetFrameTime());
+            if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) player.x += (playerSpeed * GetFrameTime());
             
             //Get player pos in image map coords
             
@@ -151,20 +152,20 @@ int main(void)
             playerBounds[2] = (Rectangle){ mapPosition.x + playerCell.x*128.0f, mapPosition.y + (playerCell.y +1)*128.0f, 128.0f, 128.0f };
             playerBounds[3] = (Rectangle){ mapPosition.x + (playerCell.x +1)*128.0f, mapPosition.y + playerCell.y*128.0f, 128.0f, 128.0f };
             
-            if (CheckCollisionRecs(player, playerBounds[0]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x, playerCell.y + 1), WHITE)) ||
-            (CheckCollisionRecs(player, playerBounds[1]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x + 1, playerCell.y), WHITE)) ||
-            (CheckCollisionRecs(player, playerBounds[2]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x, playerCell.y - 1), WHITE)) ||
-            (CheckCollisionRecs(player, playerBounds[3]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x - 1, playerCell.y), WHITE))
+            if ((CheckCollisionRecs(player, playerBounds[0]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x, playerCell.y - 1), WHITE)) ||
+                (CheckCollisionRecs(player, playerBounds[1]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x - 1, playerCell.y), WHITE)) ||
+                (CheckCollisionRecs(player, playerBounds[2]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x, playerCell.y + 1), WHITE)) ||
+                (CheckCollisionRecs(player, playerBounds[3]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x + 1, playerCell.y), WHITE)))
             {
                 player = prevPlayer;
             }
             
             camera.target = (Vector2){ player.x + 20.0f, player.y + 20.0f };
             
-            if (IsKeyDown(KEY_1)) currentBiome = 0;
-            if (IsKeyDown(KEY_2)) currentBiome = 1;
-            if (IsKeyDown(KEY_3)) currentBiome = 2;
-            if (IsKeyDown(KEY_4)) currentBiome = 3;
+            if (IsKeyDown(KEY_ONE)) currentBiome = 0;
+            if (IsKeyDown(KEY_TWO)) currentBiome = 1;
+            if (IsKeyDown(KEY_THREE)) currentBiome = 2;
+            if (IsKeyDown(KEY_FOUR)) currentBiome = 3;
         }
         
         //----------------------------------------------------------------------------------
@@ -203,7 +204,7 @@ int main(void)
                     {
                         if (ColorIsEqual(GetImageColor(imMaze, x, y), WHITE))
                         {
-                            DrawTextureRec(texBiomes[currentBiome], (Rectangle){ texBiomes[currentBiome].width/2, texBiomes[currentBiome].height/2, texBiomes[currentBiome].width/2, texBiomes[currentBiome]Map.height/2 }, (Vector2) { mapPosition.x + x* texBiomes[currentBiome].width/2, mapPosition.y + y* texBiomes[currentBiome].height/2}, WHITE);
+                            DrawTextureRec(texBiomes[currentBiome], (Rectangle){ texBiomes[currentBiome].width/2, texBiomes[currentBiome].height/2, texBiomes[currentBiome].width/2, texBiomes[currentBiome].height/2 }, (Vector2) { mapPosition.x + x* texBiomes[currentBiome].width/2, mapPosition.y + y* texBiomes[currentBiome].height/2}, WHITE);
                         }
                         else if (ColorIsEqual(GetImageColor(imMaze, x, y), BLACK))
                         {
@@ -214,7 +215,12 @@ int main(void)
                     }
                 }
                 
-                DrawRectangleLinesEx(playerBounds[i], 128.0f,GREEN)
+                DrawRectangleRec(player, RED);
+                
+                for (int i = 0; i < 4; i++) 
+                {
+                    DrawRectangleLinesEx(playerBounds[i], 2.0f,GREEN);
+                }
                 
                 EndMode2D();
                 
@@ -223,7 +229,7 @@ int main(void)
                 
             }
             
-            DrawFPS(10, 10);
+            DrawFPS(screenWidth-80, 10);
 
         EndDrawing();
         //----------------------------------------------------------------------------------
@@ -263,7 +269,7 @@ static Image GetImageMaze(int width, int height, int spacingRows, int spacingCol
                 {
                     if (GetRandomValue(0, 100)<pointChance*100)
                     {
-                        ImageDrawPixel(&imMaze, x, y, RED);
+                        ImageDrawPixel(&imMaze, x, y, WHITE);
                         mazePoints[mazePointCounter] = (Point) { x, y }; // Inicializa los valores: x = x , y = y
                         mazePointCounter++;
                     }
