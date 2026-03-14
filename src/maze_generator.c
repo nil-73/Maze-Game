@@ -208,9 +208,8 @@ int main(void)
                         }
                         else if (ColorIsEqual(GetImageColor(imMaze, x, y), BLACK))
                         {
-                            DrawTextureRec(texBiomes[currentBiome], (Rectangle) { texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2,
-                            texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
-                            (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, BLACK);
+                            DrawTextureRec(texBiomes[currentBiome], (Rectangle) { 0, 0, texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
+                            (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, WHITE);
                         }
                     }
                 }
