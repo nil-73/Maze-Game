@@ -14,6 +14,7 @@
 #include "raylib.h"
 
 #include <stdlib.h> // Required for: malloc(), free()
+#include <math.h> // Required for: expf(), logf()
 
 #define MAZE_SIZE 32
 #define MAZE_DRAW_SIZE 8
@@ -28,7 +29,6 @@ typedef struct Item{
     Point cell;
     bool picked;
     int points;
-    int damage;
 } Item;
 
 static Image GetImageMaze(int width, int height, int spacingRows, int spacingCols, float pointChance);
@@ -78,8 +78,24 @@ int main(void)
     Camera2D camera = { 0 };
     camera.target = (Vector2){ player.x + 20.0f, player.y + 20.0f };
     camera.offset = (Vector2){ GetScreenWidth()/2.0f, GetScreenHeight()/2.0f };
-    camera.rotation = 0.0f;
     camera.zoom = 1.0f;
+    
+    int score = 0;
+    
+    InitAudioDevice();              // Initialize audio device
+
+    Music music = LoadMusicStream("resources/music.wav");
+
+    PlayMusicStream(music);
+
+    float timePlayed = 0.0f;        // Time played normalized [0.0f..1.0f]
+    bool pause = false;             // Music playing paused
+
+    float pan = 0.0f;               // Default audio pan center [-1.0f..1.0f]
+    SetMusicPan(music, pan);
+
+    float volume = 0.8f;            // Default audio volume [0.0f..1.0f]
+    SetMusicVolume(music, volume);
     
     SetTargetFPS(60);   // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
@@ -105,9 +121,55 @@ int main(void)
             texMaze = LoadTextureFromImage(imMaze);
         }
         
+        UpdateMusicStream(music);   // Update music buffer with new stream data
+
+        // Restart music playing (stop and play)
+        // Pause/Resume music playing
+        if (IsKeyPressed(KEY_P))
+        {
+            pause = !pause;
+
+            if (pause) PauseMusicStream(music);
+            else ResumeMusicStream(music);
+        }
+
+        // Set audio pan
+        if (IsKeyDown(KEY_SEVEN))
+        {
+            pan -= 0.05f;
+            if (pan < -1.0f) pan = -1.0f;
+            SetMusicPan(music, pan);
+        }
+        else if (IsKeyDown(KEY_EIGHT))
+        {
+            pan += 0.05f;
+            if (pan > 1.0f) pan = 1.0f;
+            SetMusicPan(music, pan);
+        }
+
+        // Set audio volume
+        if (IsKeyDown(KEY_NINE))
+        {
+            volume -= 0.05f;
+            if (volume < 0.0f) volume = 0.0f;
+            SetMusicVolume(music, volume);
+        }
+        else if (IsKeyDown(KEY_ZERO))
+        {
+            volume += 0.05f;
+            if (volume > 1.0f) volume = 1.0f;
+            SetMusicVolume(music, volume);
+        }
+
+        // Get normalized time played for current music stream
+        timePlayed = GetMusicTimePlayed(music)/GetMusicTimeLength(music);
+
+        if (timePlayed > 1.0f) timePlayed = 1.0f;
+        
         if (IsKeyPressed(KEY_SPACE)) mazeEditMode = !mazeEditMode;
         if (mazeEditMode)
         {
+            pause = true;
             mousePoint.x = GetMouseX();
             mousePoint.y = GetMouseY();
             
@@ -126,15 +188,36 @@ int main(void)
                 } 
                 else if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON))
                 {
-                    ImageDrawPixel(&imMaze, imagePoint.x, imagePoint.y, BLACK);
+                    if (IsKeyDown(KEY_LEFT_CONTROL))
+                    {
+                        ImageDrawPixel(&imMaze, imagePoint.x, imagePoint.y, GREEN);
+                    
+                        UnloadTexture(texMaze);
+                        texMaze = LoadTextureFromImage(imMaze);
+                    }
+                    else
+                    {
+                        ImageDrawPixel(&imMaze, imagePoint.x, imagePoint.y, BLACK);
+                        
+                        UnloadTexture(texMaze);
+                        texMaze = LoadTextureFromImage(imMaze); 
+                    }
+                    
+                } 
+                else if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON))
+                {
+                    ImageDrawPixel(&imMaze, imagePoint.x, imagePoint.y, RED);
                     
                     UnloadTexture(texMaze);
                     texMaze = LoadTextureFromImage(imMaze);
-                } 
+                }                    
             }
+            
         }
         else 
         {
+            pause = false;
+            
             Rectangle prevPlayer = player;
             
             if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) player.y -= (playerSpeed * GetFrameTime());
@@ -161,6 +244,9 @@ int main(void)
             }
             
             camera.target = (Vector2){ player.x + 20.0f, player.y + 20.0f };
+            camera.zoom = expf(logf(camera.zoom) + ((float)GetMouseWheelMove()*0.1f));
+            if (camera.zoom > 3.0f) camera.zoom = 3.0f;
+            else if (camera.zoom < 0.1f) camera.zoom = 0.1f;
             
             if (IsKeyDown(KEY_ONE)) currentBiome = 0;
             if (IsKeyDown(KEY_TWO)) currentBiome = 1;
@@ -238,6 +324,9 @@ int main(void)
     //--------------------------------------------------------------------------------------
     UnloadTexture(texMaze);
     UnloadImage(imMaze);
+    
+    UnloadAudioStream(music);
+    CloseAudioDevice();
     
     CloseWindow();          // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
