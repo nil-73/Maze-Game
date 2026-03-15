@@ -297,6 +297,11 @@ int main(void)
                             DrawTextureRec(texBiomes[currentBiome], (Rectangle) { 0, 0, texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
                             (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, WHITE);
                         }
+                        else if (ColorIsEqual(GetImageColor(imMaze, x, y), GREEN))
+                        {
+                            DrawTextureRec(texBiomes[currentBiome], (Rectangle) { 0, texBiomes[currentBiome].width/2, texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
+                            (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, WHITE);
+                        }
                     }
                 }
                 
@@ -325,7 +330,7 @@ int main(void)
     UnloadTexture(texMaze);
     UnloadImage(imMaze);
     
-    UnloadAudioStream(music);
+    UnloadMusicStream(music);
     CloseAudioDevice();
     
     CloseWindow();          // Close window and OpenGL context
