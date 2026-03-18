@@ -293,6 +293,14 @@ int main(void)
             {
                 player = prevPlayer;
             }
+            // si estas tocando un cuadrado rojo te suma puntos, hay que hacer que sea solo una vez, que suene el sonido y desaparezca el gato y aparezca un bloque normal
+            if ((CheckCollisionRecs(player, playerBounds[0]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x, playerCell.y - 1), RED)) ||
+                (CheckCollisionRecs(player, playerBounds[1]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x - 1, playerCell.y), RED)) ||
+                (CheckCollisionRecs(player, playerBounds[2]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x, playerCell.y + 1), RED)) ||
+                (CheckCollisionRecs(player, playerBounds[3]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x + 1, playerCell.y), RED)))
+            {
+                score++;
+            }
             
             camera.target = (Vector2){ player.x + 20.0f, player.y + 20.0f };
             camera.zoom = expf(logf(camera.zoom) + ((float)GetMouseWheelMove()*0.1f));
@@ -337,7 +345,7 @@ int main(void)
             }
             else if (scene == 1)
             {
-                
+                DrawText(TextFormat("%i", score), 20, GetScreenHeight() - 30, 20, DARKBLUE); // score display
                 BeginMode2D(camera);
                 
                 for (int y = 0; y < imMaze.height; y++)
@@ -358,7 +366,7 @@ int main(void)
                             DrawTextureRec(texBiomes[currentBiome], (Rectangle) { 0, texBiomes[currentBiome].width/2, texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
                             (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, WHITE);
                         }
-                        else if (ColorIsEqual(GetImageColor(imMaze, x, y), RED))
+                        else if (ColorIsEqual(GetImageColor(imMaze, x, y), RED)) 
                         {
                             DrawTextureRec(texBiomes[currentBiome], (Rectangle) { 0, 0, texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
                             (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, WHITE);
