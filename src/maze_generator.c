@@ -19,6 +19,9 @@
 #define MAZE_SIZE 32
 #define MAZE_DRAW_SIZE 8
 #define POINT_DENISTY 4
+#define NUM_BIOMES 4
+#define PLAYER_STATUS 2
+#define MAX_CATS 20
 
 typedef struct Point{
     int x;
@@ -54,10 +57,11 @@ int main(void)
     // Load texture from image
     Texture2D texMaze = LoadTextureFromImage(imMaze);
     
-    bool mazeEditMode = false;
+    int scene = 1; // scene 0 is editMode, scene 1 is playMode, scene 2 is ending 
     Point mousePoint = {0};
     Point imagePoint = {0};
     Point position = {0};
+    Point end = {0};
     
     position.x = GetScreenWidth()/2 - texMaze.width*MAZE_DRAW_SIZE/2;
     position.y = GetScreenHeight()/2 - texMaze.height*MAZE_DRAW_SIZE/2;
@@ -67,6 +71,14 @@ int main(void)
     texBiomes[1] = LoadTexture("resources/maze_atlas02.png");
     texBiomes[2] = LoadTexture("resources/maze_atlas03.png");
     texBiomes[3] = LoadTexture("resources/maze_atlas04.png");
+    
+    Texture2D catBox = LoadTexture("resources/cat_box.png");
+    Texture2D texPlayer[2] = { 0 };
+    texPlayer[0] = LoadTexture("resources/player_idle.png");
+    texPlayer[1] = LoadTexture("resources/player_run.png");
+    
+    Texture2D texWin = LoadTexture("resources/win.png");
+    
     int currentBiome = 0;
     Vector2 mapPosition = {0};
     Vector2 playerCell = {0};
@@ -81,10 +93,14 @@ int main(void)
     camera.zoom = 1.0f;
     
     int score = 0;
+    Point catsPosition[MAX_CATS] = {0};
+    int totalCats = 0;
+    int fullCats = 0;
     
     InitAudioDevice();              // Initialize audio device
 
     Music music = LoadMusicStream("resources/music.wav");
+    Sound pickCat = LoadSound("resources/pick_cat.wav");
 
     PlayMusicStream(music);
 
@@ -166,8 +182,20 @@ int main(void)
 
         if (timePlayed > 1.0f) timePlayed = 1.0f;
         
-        if (IsKeyPressed(KEY_SPACE)) mazeEditMode = !mazeEditMode;
-        if (mazeEditMode)
+        if (IsKeyPressed(KEY_SPACE)) 
+        {
+            switch(scene)
+            {
+                case 0: 
+                    scene = 1; 
+                break;
+                
+                case 1: 
+                    scene = 0; 
+                break;
+            }
+        }
+        if (scene == 0)
         {
             pause = true;
             mousePoint.x = GetMouseX();
@@ -190,7 +218,12 @@ int main(void)
                 {
                     if (IsKeyDown(KEY_LEFT_CONTROL))
                     {
-                        ImageDrawPixel(&imMaze, imagePoint.x, imagePoint.y, GREEN);
+                        ImageDrawPixel(&imMaze, end.x, end.y, WHITE);
+                        
+                        end.x = imagePoint.x;
+                        end.y = imagePoint.y;
+                    
+                        ImageDrawPixel(&imMaze, end.x, end.y, GREEN);
                     
                         UnloadTexture(texMaze);
                         texMaze = LoadTextureFromImage(imMaze);
@@ -206,15 +239,28 @@ int main(void)
                 } 
                 else if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON))
                 {
-                    ImageDrawPixel(&imMaze, imagePoint.x, imagePoint.y, RED);
+                    if(totalCats < MAX_CATS)
+                    {
+                        catsPosition[totalCats].x = imagePoint.x;
+                        catsPosition[totalCats].y = imagePoint.y;
+                        
+                        ImageDrawPixel(&imMaze, catsPosition[totalCats].x, catsPosition[totalCats].y, RED);
+                        totalCats++;
+                    }
+                    else
+                    {
+                        ImageDrawPixel(&imMaze, catsPosition[fullCats].x, catsPosition[fullCats].y, BLACK);
+                        totalCats--;
+                        fullCats++;
+                        if(fullCats > MAX_CATS) fullCats = 0;
+                    }
                     
                     UnloadTexture(texMaze);
                     texMaze = LoadTextureFromImage(imMaze);
-                }                    
-            }
-            
+                }
+            }           
         }
-        else 
+        else if (scene == 1)
         {
             pause = false;
             
@@ -253,6 +299,11 @@ int main(void)
             if (IsKeyDown(KEY_THREE)) currentBiome = 2;
             if (IsKeyDown(KEY_FOUR)) currentBiome = 3;
         }
+        else if (scene == 2)
+        {
+            // victori is yes
+            // win win yay
+        }
         
         //----------------------------------------------------------------------------------
 
@@ -265,7 +316,7 @@ int main(void)
             DrawTextureEx(texMaze, (Vector2) { position.x, 
                 position.y }, 0.0f, MAZE_DRAW_SIZE, WHITE);
                 
-            if (mazeEditMode){            
+            if (scene == 0){            
                 if((imagePoint.x >= 0) && (imagePoint.y >= 0) && 
                    (imagePoint.x < imMaze.width) && (imagePoint.y < imMaze.height))
                 {
@@ -279,7 +330,7 @@ int main(void)
                 DrawText(TextFormat("MOUSE: [%i, %i]", mousePoint.x, mousePoint.y), 10, 40, 20, DARKBLUE);
                 DrawText(TextFormat("IMAGE: [%i, %i]", imagePoint.x, imagePoint.y), 10, 70, 20, RED);
             }
-            else 
+            else if (scene == 1)
             {
                 
                 BeginMode2D(camera);
@@ -302,6 +353,13 @@ int main(void)
                             DrawTextureRec(texBiomes[currentBiome], (Rectangle) { 0, texBiomes[currentBiome].width/2, texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
                             (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, WHITE);
                         }
+                        else if (ColorIsEqual(GetImageColor(imMaze, x, y), RED))
+                        {
+                            DrawTextureRec(texBiomes[currentBiome], (Rectangle) { 0, 0, texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
+                            (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, WHITE);
+                            
+                            DrawTextureRec(catBox, (Rectangle) {0, 0, 32, 32}, (Vector2) { mapPosition.x + x* texBiomes[currentBiome].width/2 + 48, mapPosition.y + y* texBiomes[currentBiome].height/2 + 48}, WHITE);
+                        }
                     }
                 }
                 
@@ -318,6 +376,10 @@ int main(void)
                 
                 
             }
+            else if (scene == 2)
+            {
+                // yes yes ganar
+            }
             
             DrawFPS(screenWidth-80, 10);
 
@@ -328,8 +390,19 @@ int main(void)
     // De-Initialization
     //--------------------------------------------------------------------------------------
     UnloadTexture(texMaze);
+    for (int i = 0; i < NUM_BIOMES; i++)
+    {
+        UnloadTexture(texBiomes[i]);
+    }
+    for (int i = 0; i < PLAYER_STATUS; i++)
+    {
+        UnloadTexture(texPlayer[i]);
+    }
+    UnloadTexture(catBox);
+    UnloadTexture(texWin);
     UnloadImage(imMaze);
     
+    UnloadSound(pickCat);
     UnloadMusicStream(music);
     CloseAudioDevice();
     
