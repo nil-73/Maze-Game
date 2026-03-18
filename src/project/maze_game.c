@@ -47,6 +47,7 @@ int main(void)
     //---------------------------------------------------------
     const int screenWidth = 800;
     const int screenHeight = 450;
+    Point end = {0};
     
     InitWindow(screenWidth, screenHeight, "Delivery04 - maze game");
     
@@ -72,7 +73,6 @@ int main(void)
     Point mousePoint = {0};
     Point imagePoint = {0};
     Point position = {0};
-    Point end = {0};
     
     position.x = GetScreenWidth()/2 - texMaze.width*MAZE_DRAW_SIZE/2;
     position.y = GetScreenHeight()/2 - texMaze.height*MAZE_DRAW_SIZE/2;
