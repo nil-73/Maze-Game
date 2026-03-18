@@ -1,42 +1,41 @@
 /*******************************************************************************************
 *
-*   raylib maze game
+* raylib maze game
 *
-*   Procedural maze generator using Maze Grid Algorithm
+* Procedural maze generator using Maze Grid Algorithm
 *
-*   This game has been created using raylib (www.raylib.com)
-*   raylib is licensed under an unmodified zlib/libpng license (View raylib.h for details)
+* This game has been created using raylib (www.raylib.com)
+* raylib is licensed under an unmodified zlib/libpng license (View raylib.h for details)
 *
-*   Copyright (c) 2024-2025 Ramon Santamaria (@raysan5)
+* Copyright (c) 2024-2025 Ramon Santamaria (@raysan5)
 *
 ********************************************************************************************/
 
 #include "raylib.h"
 
 #include <stdlib.h> // Required for: malloc(), free()
-#include <math.h> // Required for: expf(), logf()
+#include <math.h>   // Required for: expf(), logf()
 
 #define MAZE_SIZE 32
 #define MAZE_DRAW_SIZE 8
-#define POINT_DENISTY 4
+#define POINT_DENSITY 4
 #define NUM_BIOMES 4
-#define PLAYER_STATUS 2
 #define MAX_CATS 20
 
-typedef struct Point{
+typedef struct point {
     int x;
     int y;
-} Point;
+} point;
 
-typedef struct Item{
-    Point cell;
+typedef struct item {
+    point cell;
     bool picked;
     int points;
-} Item;
+} item;
 
 // Generate procedural maze image, using grid-based algorithm
 // NOTE: Functions defined as static are internal to the module
-static Image GenImageMaze(int width, int height, int spacingRows, int spacingCols, float pointChance);
+static Image gen_image_maze(int width, int height, int spacing_rows, int spacing_cols, float point_chance);
 
 //----------------------------------------------------------------------------------
 // Main entry point
@@ -45,56 +44,56 @@ int main(void)
 {
     // Initialization
     //---------------------------------------------------------
-    const int screenWidth = 800;
-    const int screenHeight = 450;
-    Point end = {0};
+    const int screen_width = 800;
+    const int screen_height = 450;
+    point end = {0};
     
-    InitWindow(screenWidth, screenHeight, "Delivery04 - maze game");
+    InitWindow(screen_width, screen_height, "Delivery04 - maze game");
     
     unsigned int seed = 12345678;
     
     SetRandomSeed(seed);
     
-    Image imMaze = GenImageMaze(MAZE_SIZE, MAZE_SIZE, POINT_DENISTY, POINT_DENISTY, 0.4f);
+    Image im_maze = gen_image_maze(MAZE_SIZE, MAZE_SIZE, POINT_DENSITY, POINT_DENSITY, 0.4f);
     
     do
     {
-        end.x = GetRandomValue(1, imMaze.width - 2);
-        end.y = GetRandomValue(1, imMaze.height - 2);
+        end.x = GetRandomValue(1, im_maze.width - 2);
+        end.y = GetRandomValue(1, im_maze.height - 2);
     }
-    while (!ColorIsEqual(GetImageColor(imMaze, end.x, end.y), BLACK));
+    while (!ColorIsEqual(GetImageColor(im_maze, end.x, end.y), BLACK));
 
-    ImageDrawPixel(&imMaze, end.x, end.y, GREEN);
+    ImageDrawPixel(&im_maze, end.x, end.y, GREEN);
     
     // Load texture from image
-    Texture2D texMaze = LoadTextureFromImage(imMaze);
+    Texture2D tex_maze = LoadTextureFromImage(im_maze);
     
     int scene = 1; // scene 0 is editMode, scene 1 is playMode, scene 2 is ending 
-    Point mousePoint = {0};
-    Point imagePoint = {0};
-    Point position = {0};
+    point mouse_point = {0};
+    point image_point = {0};
+    point position = {0};
     
-    position.x = GetScreenWidth()/2 - texMaze.width*MAZE_DRAW_SIZE/2;
-    position.y = GetScreenHeight()/2 - texMaze.height*MAZE_DRAW_SIZE/2;
+    position.x = GetScreenWidth()/2 - tex_maze.width*MAZE_DRAW_SIZE/2;
+    position.y = GetScreenHeight()/2 - tex_maze.height*MAZE_DRAW_SIZE/2;
     
-    Texture2D texBiomes[4] = { 0 };
-    texBiomes[0] = LoadTexture("resources/maze_atlas01.png");
-    texBiomes[1] = LoadTexture("resources/maze_atlas02.png");
-    texBiomes[2] = LoadTexture("resources/maze_atlas03.png");
-    texBiomes[3] = LoadTexture("resources/maze_atlas04.png");
+    Texture2D tex_biomes[4] = { 0 };
+    tex_biomes[0] = LoadTexture("resources/maze_atlas01.png");
+    tex_biomes[1] = LoadTexture("resources/maze_atlas02.png");
+    tex_biomes[2] = LoadTexture("resources/maze_atlas03.png");
+    tex_biomes[3] = LoadTexture("resources/maze_atlas04.png");
     
-    Texture2D catBox = LoadTexture("resources/cat_box.png");
-    Texture2D texPlayer = LoadTexture("resources/player_idle.png");
+    Texture2D cat_box = LoadTexture("resources/cat_box.png");
+    Texture2D tex_player = LoadTexture("resources/player_idle.png");
     
-    Texture2D texWin = LoadTexture("resources/win.png");
+    Texture2D tex_win = LoadTexture("resources/win.png");
     
-    int currentBiome = 0;
-    Vector2 mapPosition = {0};
-    Vector2 playerCell = {0};
+    int current_biome = 0;
+    Vector2 map_position = {0};
+    Vector2 player_cell = {0};
 
-    Rectangle player = {160,160,40,40};
-    float playerSpeed = 200.0f;
-    Rectangle playerBounds[4] = {0};
+    Rectangle player = {160,160,32,32};
+    float player_speed = 200.0f;
+    Rectangle player_bounds[4] = {0};
 
     Camera2D camera = { 0 };
     camera.target = (Vector2){ player.x + 20.0f, player.y + 20.0f };
@@ -102,18 +101,18 @@ int main(void)
     camera.zoom = 1.0f;
     
     int score = 0;
-    Item cats[MAX_CATS] = {0};
-    int totalCats = 0;
-    int fullCats = 0;
+    item cats[MAX_CATS] = {0};
+    int total_cats = 0;
+    int full_cats = 0;
     
     InitAudioDevice();              // Initialize audio device
 
     Music music = LoadMusicStream("resources/music.wav");
-    Sound pickCat = LoadSound("resources/pick_cat.wav");
+    Sound pick_cat = LoadSound("resources/pick_cat.wav");
 
     PlayMusicStream(music);
 
-    float timePlayed = 0.0f;        // Time played normalized [0.0f..1.0f]
+    float time_played = 0.0f;        // Time played normalized [0.0f..1.0f]
     bool pause = false;             // Music playing paused
 
     float pan = 0.0f;               // Default audio pan center [-1.0f..1.0f]
@@ -133,26 +132,24 @@ int main(void)
         // Reset maze for new random generation
         if (IsKeyPressed(KEY_R))
         {
-            // TODO: Set a new seed and re-generate maze
-            
-            UnloadTexture(texMaze);
-            UnloadImage(imMaze);
+            UnloadTexture(tex_maze);
+            UnloadImage(im_maze);
             
             seed += 1;
             SetRandomSeed(seed);
             
-            imMaze = GenImageMaze(MAZE_SIZE, MAZE_SIZE, POINT_DENISTY, POINT_DENISTY, 0.4f);
+            im_maze = gen_image_maze(MAZE_SIZE, MAZE_SIZE, POINT_DENSITY, POINT_DENSITY, 0.4f);
             
             do
             {
-                end.x = GetRandomValue(1, imMaze.width - 2);
-                end.y = GetRandomValue(1, imMaze.height - 2);
+                end.x = GetRandomValue(1, im_maze.width - 2);
+                end.y = GetRandomValue(1, im_maze.height - 2);
             }
-            while (!ColorIsEqual(GetImageColor(imMaze, end.x, end.y), BLACK));
+            while (!ColorIsEqual(GetImageColor(im_maze, end.x, end.y), BLACK));
 
-            ImageDrawPixel(&imMaze, end.x, end.y, GREEN);
+            ImageDrawPixel(&im_maze, end.x, end.y, GREEN);
             
-            texMaze = LoadTextureFromImage(imMaze);
+            tex_maze = LoadTextureFromImage(im_maze);
         }
         
         UpdateMusicStream(music);   // Update music buffer with new stream data
@@ -196,9 +193,9 @@ int main(void)
         }
 
         // Get normalized time played for current music stream
-        timePlayed = GetMusicTimePlayed(music)/GetMusicTimeLength(music);
+        time_played = GetMusicTimePlayed(music)/GetMusicTimeLength(music);
 
-        if (timePlayed > 1.0f) timePlayed = 1.0f;
+        if (time_played > 1.0f) time_played = 1.0f;
         
         if (IsKeyPressed(KEY_SPACE)) 
         {
@@ -215,27 +212,27 @@ int main(void)
                 {
                     scene = 1;
                     score = 0;
-                    totalCats = 0;
-                    fullCats = 0;
+                    total_cats = 0;
+                    full_cats = 0;
 
-                    UnloadTexture(texMaze);
-                    UnloadImage(imMaze);
+                    UnloadTexture(tex_maze);
+                    UnloadImage(im_maze);
 
                     seed += 1;
                     SetRandomSeed(seed);
 
-                    imMaze = GenImageMaze(MAZE_SIZE, MAZE_SIZE, POINT_DENISTY, POINT_DENISTY, 0.4f);
+                    im_maze = gen_image_maze(MAZE_SIZE, MAZE_SIZE, POINT_DENSITY, POINT_DENSITY, 0.4f);
 
                     do
                     {
-                        end.x = GetRandomValue(1, imMaze.width - 2);
-                        end.y = GetRandomValue(1, imMaze.height - 2);
+                        end.x = GetRandomValue(1, im_maze.width - 2);
+                        end.y = GetRandomValue(1, im_maze.height - 2);
                     }
-                    while (!ColorIsEqual(GetImageColor(imMaze, end.x, end.y), BLACK));
+                    while (!ColorIsEqual(GetImageColor(im_maze, end.x, end.y), BLACK));
 
-                    ImageDrawPixel(&imMaze, end.x, end.y, GREEN);
+                    ImageDrawPixel(&im_maze, end.x, end.y, GREEN);
 
-                    texMaze = LoadTextureFromImage(imMaze);
+                    tex_maze = LoadTextureFromImage(im_maze);
 
                     player.x = 160;
                     player.y = 160;
@@ -248,74 +245,74 @@ int main(void)
         if (scene == 0)
         {
             pause = true;
-            mousePoint.x = GetMouseX();
-            mousePoint.y = GetMouseY();
+            mouse_point.x = GetMouseX();
+            mouse_point.y = GetMouseY();
             
-            imagePoint.x = (mousePoint.x - position.x)/MAZE_DRAW_SIZE;
-            imagePoint.y = (mousePoint.y - position.y)/MAZE_DRAW_SIZE;
+            image_point.x = (mouse_point.x - position.x)/MAZE_DRAW_SIZE;
+            image_point.y = (mouse_point.y - position.y)/MAZE_DRAW_SIZE;
             
-            if ((imagePoint.x >= 0) && (imagePoint.y >= 0) && 
-               (imagePoint.x < imMaze.width) && (imagePoint.y < imMaze.height))
+            if ((image_point.x >= 0) && (image_point.y >= 0) && 
+               (image_point.x < im_maze.width) && (image_point.y < im_maze.height))
             {
                 if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
                 {
-                    ImageDrawPixel(&imMaze, imagePoint.x, imagePoint.y, BLACK);
+                    ImageDrawPixel(&im_maze, image_point.x, image_point.y, BLACK);
                     
-                    UnloadTexture(texMaze);
-                    texMaze = LoadTextureFromImage(imMaze);
+                    UnloadTexture(tex_maze);
+                    tex_maze = LoadTextureFromImage(im_maze);
                 } 
                 else if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON))
                 {
                     if (IsKeyDown(KEY_LEFT_CONTROL))
                     {
-                        ImageDrawPixel(&imMaze, end.x, end.y, WHITE);
+                        ImageDrawPixel(&im_maze, end.x, end.y, WHITE);
                         
-                        end.x = imagePoint.x;
-                        end.y = imagePoint.y;
+                        end.x = image_point.x;
+                        end.y = image_point.y;
                     
-                        ImageDrawPixel(&imMaze, end.x, end.y, GREEN);
+                        ImageDrawPixel(&im_maze, end.x, end.y, GREEN);
                     
-                        UnloadTexture(texMaze);
-                        texMaze = LoadTextureFromImage(imMaze);
+                        UnloadTexture(tex_maze);
+                        tex_maze = LoadTextureFromImage(im_maze);
                     }
                     else
                     {
-                        ImageDrawPixel(&imMaze, imagePoint.x, imagePoint.y, WHITE);
+                        ImageDrawPixel(&im_maze, image_point.x, image_point.y, WHITE);
                         
-                        UnloadTexture(texMaze);
-                        texMaze = LoadTextureFromImage(imMaze); 
+                        UnloadTexture(tex_maze);
+                        tex_maze = LoadTextureFromImage(im_maze); 
                     }
                     
                 } 
                 else if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
                 {
-                    if (totalCats < MAX_CATS)
+                    if (total_cats < MAX_CATS)
                     {
-                        cats[totalCats].cell.x = imagePoint.x;
-                        cats[totalCats].cell.y = imagePoint.y;
-                        cats[totalCats].picked = false;
-                        cats[totalCats].points = 1;
+                        cats[total_cats].cell.x = image_point.x;
+                        cats[total_cats].cell.y = image_point.y;
+                        cats[total_cats].picked = false;
+                        cats[total_cats].points = 1;
 
-                        ImageDrawPixel(&imMaze, cats[totalCats].cell.x, cats[totalCats].cell.y, RED);
-                        totalCats++;
+                        ImageDrawPixel(&im_maze, cats[total_cats].cell.x, cats[total_cats].cell.y, RED);
+                        total_cats++;
                     }
                     else
                     {
-                        ImageDrawPixel(&imMaze, cats[fullCats].cell.x, cats[fullCats].cell.y, BLACK);
+                        ImageDrawPixel(&im_maze, cats[full_cats].cell.x, cats[full_cats].cell.y, BLACK);
 
-                        cats[fullCats].cell.x = imagePoint.x;
-                        cats[fullCats].cell.y = imagePoint.y;
-                        cats[fullCats].picked = false;
-                        cats[fullCats].points = 1;
+                        cats[full_cats].cell.x = image_point.x;
+                        cats[full_cats].cell.y = image_point.y;
+                        cats[full_cats].picked = false;
+                        cats[full_cats].points = 1;
 
-                        ImageDrawPixel(&imMaze, cats[fullCats].cell.x, cats[fullCats].cell.y, RED);
+                        ImageDrawPixel(&im_maze, cats[full_cats].cell.x, cats[full_cats].cell.y, RED);
 
-                        fullCats++;
-                        if (fullCats >= MAX_CATS) fullCats = 0;
+                        full_cats++;
+                        if (full_cats >= MAX_CATS) full_cats = 0;
                     }
 
-                    UnloadTexture(texMaze);
-                    texMaze = LoadTextureFromImage(imMaze);
+                    UnloadTexture(tex_maze);
+                    tex_maze = LoadTextureFromImage(im_maze);
                 }
             }           
         }
@@ -323,50 +320,50 @@ int main(void)
         {
             pause = false;
             
-            Rectangle prevPlayer = player;
+            Rectangle prev_player = player;
             
-            if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) player.y -= (playerSpeed * GetFrameTime());
-            if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) player.y += (playerSpeed * GetFrameTime());
-            if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) player.x -= (playerSpeed * GetFrameTime());
-            if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) player.x += (playerSpeed * GetFrameTime());
+            if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) player.y -= (player_speed * GetFrameTime());
+            if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) player.y += (player_speed * GetFrameTime());
+            if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) player.x -= (player_speed * GetFrameTime());
+            if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) player.x += (player_speed * GetFrameTime());
             
             //Get player pos in image map coords
             
-            playerCell.x = (int)((player.x + player.width/2 - mapPosition.x)/128.0f);
-            playerCell.y = (int)((player.y + player.height/2 - mapPosition.y)/128.0f);
+            player_cell.x = (int)((player.x + player.width/2 - map_position.x)/128.0f);
+            player_cell.y = (int)((player.y + player.height/2 - map_position.y)/128.0f);
             
-            playerBounds[0] = (Rectangle){ mapPosition.x + playerCell.x*128.0f, mapPosition.y + (playerCell.y -1)*128.0f, 128.0f, 128.0f };
-            playerBounds[1] = (Rectangle){ mapPosition.x + (playerCell.x -1)*128.0f, mapPosition.y + playerCell.y*128.0f, 128.0f, 128.0f };
-            playerBounds[2] = (Rectangle){ mapPosition.x + playerCell.x*128.0f, mapPosition.y + (playerCell.y +1)*128.0f, 128.0f, 128.0f };
-            playerBounds[3] = (Rectangle){ mapPosition.x + (playerCell.x +1)*128.0f, mapPosition.y + playerCell.y*128.0f, 128.0f, 128.0f };
+            player_bounds[0] = (Rectangle){ map_position.x + player_cell.x*128.0f, map_position.y + (player_cell.y -1)*128.0f, 128.0f, 128.0f };
+            player_bounds[1] = (Rectangle){ map_position.x + (player_cell.x -1)*128.0f, map_position.y + player_cell.y*128.0f, 128.0f, 128.0f };
+            player_bounds[2] = (Rectangle){ map_position.x + player_cell.x*128.0f, map_position.y + (player_cell.y +1)*128.0f, 128.0f, 128.0f };
+            player_bounds[3] = (Rectangle){ map_position.x + (player_cell.x +1)*128.0f, map_position.y + player_cell.y*128.0f, 128.0f, 128.0f };
             
-            if ((CheckCollisionRecs(player, playerBounds[0]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x, playerCell.y - 1), WHITE)) ||
-                (CheckCollisionRecs(player, playerBounds[1]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x - 1, playerCell.y), WHITE)) ||
-                (CheckCollisionRecs(player, playerBounds[2]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x, playerCell.y + 1), WHITE)) ||
-                (CheckCollisionRecs(player, playerBounds[3]) && ColorIsEqual(GetImageColor(imMaze, playerCell.x + 1, playerCell.y), WHITE)))
+            if ((CheckCollisionRecs(player, player_bounds[0]) && ColorIsEqual(GetImageColor(im_maze, player_cell.x, player_cell.y - 1), WHITE)) ||
+                (CheckCollisionRecs(player, player_bounds[1]) && ColorIsEqual(GetImageColor(im_maze, player_cell.x - 1, player_cell.y), WHITE)) ||
+                (CheckCollisionRecs(player, player_bounds[2]) && ColorIsEqual(GetImageColor(im_maze, player_cell.x, player_cell.y + 1), WHITE)) ||
+                (CheckCollisionRecs(player, player_bounds[3]) && ColorIsEqual(GetImageColor(im_maze, player_cell.x + 1, player_cell.y), WHITE)))
             {
-                player = prevPlayer;
+                player = prev_player;
             }
-            // si estas tocando un cuadrado rojo te suma puntos, hay que hacer que sea solo una vez, que suene el sonido y desaparezca el gato y aparezca un bloque normal
-            for (int i = 0; i < totalCats; i++)
+            
+            for (int i = 0; i < total_cats; i++)
             {
                 if (!cats[i].picked)
                 {
-                    if ((cats[i].cell.x == (int)playerCell.x) && (cats[i].cell.y == (int)playerCell.y))
+                    if ((cats[i].cell.x == (int)player_cell.x) && (cats[i].cell.y == (int)player_cell.y))
                     {
                         cats[i].picked = true;
                         score += cats[i].points;
-                        PlaySound(pickCat);
+                        PlaySound(pick_cat);
 
-                        ImageDrawPixel(&imMaze, cats[i].cell.x, cats[i].cell.y, BLACK);
+                        ImageDrawPixel(&im_maze, cats[i].cell.x, cats[i].cell.y, BLACK);
 
-                        UnloadTexture(texMaze);
-                        texMaze = LoadTextureFromImage(imMaze);
+                        UnloadTexture(tex_maze);
+                        tex_maze = LoadTextureFromImage(im_maze);
                     }
                 }
             }
             
-            if ((int)playerCell.x == end.x && (int)playerCell.y == end.y)
+            if ((int)player_cell.x == end.x && (int)player_cell.y == end.y)
             {
                 scene = 2;
             }
@@ -376,10 +373,10 @@ int main(void)
             if (camera.zoom > 3.0f) camera.zoom = 3.0f;
             else if (camera.zoom < 0.1f) camera.zoom = 0.1f;
             
-            if (IsKeyDown(KEY_ONE)) currentBiome = 0;
-            if (IsKeyDown(KEY_TWO)) currentBiome = 1;
-            if (IsKeyDown(KEY_THREE)) currentBiome = 2;
-            if (IsKeyDown(KEY_FOUR)) currentBiome = 3;
+            if (IsKeyDown(KEY_ONE)) current_biome = 0;
+            if (IsKeyDown(KEY_TWO)) current_biome = 1;
+            if (IsKeyDown(KEY_THREE)) current_biome = 2;
+            if (IsKeyDown(KEY_FOUR)) current_biome = 3;
         }
         else if (scene == 2)
         {
@@ -395,72 +392,72 @@ int main(void)
             ClearBackground(SKYBLUE);
                 
             if (scene == 0){  
-                DrawTextureEx(texMaze, (Vector2){ position.x, position.y }, 0.0f, MAZE_DRAW_SIZE, WHITE);
+                DrawTextureEx(tex_maze, (Vector2){ position.x, position.y }, 0.0f, MAZE_DRAW_SIZE, WHITE);
                 
-                if((imagePoint.x >= 0) && (imagePoint.y >= 0) && 
-                   (imagePoint.x < imMaze.width) && (imagePoint.y < imMaze.height))
+                if((image_point.x >= 0) && (image_point.y >= 0) && 
+                   (image_point.x < im_maze.width) && (image_point.y < im_maze.height))
                 {
-                    DrawRectangleLines(position.x+imagePoint.x*MAZE_DRAW_SIZE, 
-                    position.y+imagePoint.y*MAZE_DRAW_SIZE, MAZE_DRAW_SIZE, MAZE_DRAW_SIZE, GREEN);
+                    DrawRectangleLines(position.x+image_point.x*MAZE_DRAW_SIZE, 
+                    position.y+image_point.y*MAZE_DRAW_SIZE, MAZE_DRAW_SIZE, MAZE_DRAW_SIZE, GREEN);
                 }
                 
                 DrawText("EDIT MODE", 10, 10, 20, BLACK);
                 
                 DrawText(TextFormat("%i", seed), 20, GetScreenHeight() - 30, 20, DARKBLUE);
-                DrawText(TextFormat("MOUSE: [%i, %i]", mousePoint.x, mousePoint.y), 10, 40, 20, DARKBLUE);
-                DrawText(TextFormat("IMAGE: [%i, %i]", imagePoint.x, imagePoint.y), 10, 70, 20, RED);
+                DrawText(TextFormat("MOUSE: [%i, %i]", mouse_point.x, mouse_point.y), 10, 40, 20, DARKBLUE);
+                DrawText(TextFormat("IMAGE: [%i, %i]", image_point.x, image_point.y), 10, 70, 20, RED);
             }
             else if (scene == 1)
             {
-                DrawText(TextFormat("%i", score), 20, GetScreenHeight() - 30, 20, DARKBLUE); // score display
+                DrawText(TextFormat("SCORE: [%i]", score), 20, GetScreenHeight() - 30, 20, DARKBLUE); // score display
                 BeginMode2D(camera);
                 
-                for (int y = 0; y < imMaze.height; y++)
+                for (int y = 0; y < im_maze.height; y++)
                 {
-                    for (int x = 0; x < imMaze.width; x++) 
+                    for (int x = 0; x < im_maze.width; x++) 
                     {
-                        if (ColorIsEqual(GetImageColor(imMaze, x, y), WHITE))
+                        if (ColorIsEqual(GetImageColor(im_maze, x, y), WHITE))
                         {
-                            DrawTextureRec(texBiomes[currentBiome], (Rectangle){ texBiomes[currentBiome].width/2, texBiomes[currentBiome].height/2, texBiomes[currentBiome].width/2, texBiomes[currentBiome].height/2 }, (Vector2) { mapPosition.x + x* texBiomes[currentBiome].width/2, mapPosition.y + y* texBiomes[currentBiome].height/2}, WHITE);
+                            DrawTextureRec(tex_biomes[current_biome], (Rectangle){ tex_biomes[current_biome].width/2, tex_biomes[current_biome].height/2, tex_biomes[current_biome].width/2, tex_biomes[current_biome].height/2 }, (Vector2) { map_position.x + x* tex_biomes[current_biome].width/2, map_position.y + y* tex_biomes[current_biome].height/2}, WHITE);
                         }
-                        else if (ColorIsEqual(GetImageColor(imMaze, x, y), BLACK))
+                        else if (ColorIsEqual(GetImageColor(im_maze, x, y), BLACK))
                         {
-                            DrawTextureRec(texBiomes[currentBiome], (Rectangle) { 0, 0, texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
-                            (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, WHITE);
+                            DrawTextureRec(tex_biomes[current_biome], (Rectangle) { 0, 0, tex_biomes[current_biome].width / 2, tex_biomes[current_biome].height / 2 }, 
+                            (Vector2) { map_position.x + x * tex_biomes[current_biome].width / 2, map_position.y + y * tex_biomes[current_biome].height / 2 }, WHITE);
                         }
-                        else if (ColorIsEqual(GetImageColor(imMaze, x, y), GREEN))
+                        else if (ColorIsEqual(GetImageColor(im_maze, x, y), GREEN))
                         {
-                            DrawTextureRec(texBiomes[currentBiome], (Rectangle) { 0, texBiomes[currentBiome].width/2, texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
-                            (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, WHITE);
+                            DrawTextureRec(tex_biomes[current_biome], (Rectangle) { 0, tex_biomes[current_biome].width/2, tex_biomes[current_biome].width / 2, tex_biomes[current_biome].height / 2 }, 
+                            (Vector2) { map_position.x + x * tex_biomes[current_biome].width / 2, map_position.y + y * tex_biomes[current_biome].height / 2 }, WHITE);
                         }
-                        else if (ColorIsEqual(GetImageColor(imMaze, x, y), RED)) 
+                        else if (ColorIsEqual(GetImageColor(im_maze, x, y), RED)) 
                         {
-                            DrawTextureRec(texBiomes[currentBiome], (Rectangle) { 0, 0, texBiomes[currentBiome].width / 2, texBiomes[currentBiome].height / 2 }, 
-                            (Vector2) { mapPosition.x + x * texBiomes[currentBiome].width / 2, mapPosition.y + y * texBiomes[currentBiome].height / 2 }, WHITE);
+                            DrawTextureRec(tex_biomes[current_biome], (Rectangle) { 0, 0, tex_biomes[current_biome].width / 2, tex_biomes[current_biome].height / 2 }, 
+                            (Vector2) { map_position.x + x * tex_biomes[current_biome].width / 2, map_position.y + y * tex_biomes[current_biome].height / 2 }, WHITE);
                         }
                     }
                 }
-                for (int i = 0; i < totalCats; i++)
+                for (int i = 0; i < total_cats; i++)
                 {
                     if (!cats[i].picked)
                     {
                         DrawTextureRec(
-                            catBox,
+                            cat_box,
                             (Rectangle){ 0, 0, 32, 32 },
                             (Vector2){
-                                mapPosition.x + cats[i].cell.x * texBiomes[currentBiome].width/2 + 48,
-                                mapPosition.y + cats[i].cell.y * texBiomes[currentBiome].height/2 + 48
+                                map_position.x + cats[i].cell.x * tex_biomes[current_biome].width/2 + 48,
+                                map_position.y + cats[i].cell.y * tex_biomes[current_biome].height/2 + 48
                             },
                             WHITE
                         );
                     }
                 }
                 
-                DrawTextureEx(texPlayer, (Vector2){ player.x, player.y }, 0.0f, 3.0f, WHITE);
+                DrawTextureEx(tex_player, (Vector2){ player.x - 32.0f, player.y - 32.0f }, 0.0f, 3.0f, WHITE);
                 
                 for (int i = 0; i < 4; i++) 
                 {
-                    DrawRectangleLinesEx(playerBounds[i], 2.0f,GREEN);
+                    DrawRectangleLinesEx(player_bounds[i], 2.0f,GREEN);
                 }
                 
                 EndMode2D();
@@ -474,15 +471,15 @@ int main(void)
                 ClearBackground(WHITE);
                 
                 float scale = 0.5f;
-                float width = texWin.width * scale;
-                float height = texWin.height * scale;
+                float width = tex_win.width * scale;
+                float height = tex_win.height * scale;
 
                 DrawTexturePro(
-                    texWin,
-                    (Rectangle){ 0, 0, texWin.width, texWin.height },
+                    tex_win,
+                    (Rectangle){ 0, 0, tex_win.width, tex_win.height },
                     (Rectangle){
-                        screenWidth/2 - width/2,
-                        screenHeight/2 - height/2,
+                        screen_width/2 - width/2,
+                        screen_height/2 - height/2,
                         width,
                         height
                     },
@@ -491,10 +488,10 @@ int main(void)
                     WHITE
                 );
 
-                DrawText(TextFormat("Score: %i", score), screenWidth/2 - 60, screenHeight - 80, 20, BLACK);
+                DrawText(TextFormat("Score: %i", score), screen_width/2 - 60, screen_height - 80, 20, BLACK);
             }
             
-            DrawFPS(screenWidth-80, 10);
+            DrawFPS(screen_width-80, 10);
 
         EndDrawing();
         //----------------------------------------------------------------------------------
@@ -502,18 +499,18 @@ int main(void)
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
-    UnloadTexture(texMaze);
+    UnloadTexture(tex_maze);
     for (int i = 0; i < NUM_BIOMES; i++)
     {
-        UnloadTexture(texBiomes[i]);
+        UnloadTexture(tex_biomes[i]);
     }
-    UnloadTexture(texPlayer);
+    UnloadTexture(tex_player);
 
-    UnloadTexture(catBox);
-    UnloadTexture(texWin);
-    UnloadImage(imMaze);
+    UnloadTexture(cat_box);
+    UnloadTexture(tex_win);
+    UnloadImage(im_maze);
     
-    UnloadSound(pickCat);
+    UnloadSound(pick_cat);
     UnloadMusicStream(music);
     CloseAudioDevice();
     
@@ -522,65 +519,64 @@ int main(void)
 
     return 0;
 }
-static Image GenImageMaze(int width, int height, int spacingRows, int spacingCols, float pointChance)
+
+static Image gen_image_maze(int width, int height, int spacing_rows, int spacing_cols, float point_chance)
 {
-    Image imMaze = GenImageColor(width, height, BLACK);
+    Image im_maze = GenImageColor(width, height, BLACK);
     
-    // Point mazePoints[64] = { 0 }; // Static memory alloc
+    point *maze_points = malloc(64*sizeof(point));
     
-    Point *mazePoints = malloc(64*sizeof(Point));
+    int maze_point_counter = 0;
     
-    int mazePointCounter = 0;
-    
-    for (int y = 0; y < imMaze.height; y++)
+    for (int y = 0; y < im_maze.height; y++)
     {
-        for (int x = 0; x < imMaze.width; x++)
+        for (int x = 0; x < im_maze.width; x++)
         {
-            if ((x == 0) || (y == 0) || (x == (imMaze.width - 1)) || (y == (imMaze.height - 1))) 
+            if ((x == 0) || (y == 0) || (x == (im_maze.width - 1)) || (y == (im_maze.height - 1))) 
             {
-                ImageDrawPixel(&imMaze, x, y, WHITE);
+                ImageDrawPixel(&im_maze, x, y, WHITE);
             }
             else 
             {
-                if ((x%spacingRows == 0) && (y%spacingCols == 0)) 
+                if ((x%spacing_rows == 0) && (y%spacing_cols == 0)) 
                 {
-                    if (GetRandomValue(0, 100)<pointChance*100)
+                    if (GetRandomValue(0, 100)<point_chance*100)
                     {
-                        ImageDrawPixel(&imMaze, x, y, WHITE);
-                        mazePoints[mazePointCounter] = (Point) { x, y }; // Inicializa los valores: x = x , y = y
-                        mazePointCounter++;
+                        ImageDrawPixel(&im_maze, x, y, WHITE);
+                        maze_points[maze_point_counter] = (point) { x, y }; 
+                        maze_point_counter++;
                     }
                 }
             }
         }
     }
     
-    Point dirIncrements[4] = {
+    point dir_increments[4] = {
         {0,-1},
         {1,0},
         {0,1},
         {-1,0}
     };
     
-    int *indices = LoadRandomSequence(mazePointCounter, 0, mazePointCounter - 1);
+    int *indices = LoadRandomSequence(maze_point_counter, 0, maze_point_counter - 1);
     
-    for (int i = 0; i < mazePointCounter; i++)
+    for (int i = 0; i < maze_point_counter; i++)
     {
         int dir = GetRandomValue(0,3);
-        Point nextMazePoint = mazePoints[indices[i]];
-        nextMazePoint.x += dirIncrements[dir].x;
-        nextMazePoint.y += dirIncrements[dir].y;
+        point next_maze_point = maze_points[indices[i]];
+        next_maze_point.x += dir_increments[dir].x;
+        next_maze_point.y += dir_increments[dir].y;
         
-        while (ColorIsEqual(GetImageColor(imMaze, nextMazePoint.x, nextMazePoint.y), BLACK))
+        while (ColorIsEqual(GetImageColor(im_maze, next_maze_point.x, next_maze_point.y), BLACK))
         {    
-            ImageDrawPixel(&imMaze, nextMazePoint.x, nextMazePoint.y, WHITE);
+            ImageDrawPixel(&im_maze, next_maze_point.x, next_maze_point.y, WHITE);
             
-            nextMazePoint.x += dirIncrements[dir].x;
-            nextMazePoint.y += dirIncrements[dir].y;
+            next_maze_point.x += dir_increments[dir].x;
+            next_maze_point.y += dir_increments[dir].y;
         }
     }
-    free(mazePoints);
+    free(maze_points);
     UnloadRandomSequence(indices);
     
-    return imMaze;
+    return im_maze;
 }
