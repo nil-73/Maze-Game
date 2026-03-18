@@ -237,22 +237,27 @@ int main(void)
                     }
                     
                 } 
-                else if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON))
+                else if (IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON))
                 {
                     if(totalCats < MAX_CATS)
                     {
-                        catsPosition[totalCats].x = imagePoint.x;
+                        catsPosition[totalCats].x = imagePoint.x;
                         catsPosition[totalCats].y = imagePoint.y;
                         
                         ImageDrawPixel(&imMaze, catsPosition[totalCats].x, catsPosition[totalCats].y, RED);
                         totalCats++;
                     }
                     else
-                    {
+                    {                        
                         ImageDrawPixel(&imMaze, catsPosition[fullCats].x, catsPosition[fullCats].y, BLACK);
-                        totalCats--;
+                        
+                        catsPosition[fullCats].x = imagePoint.x;
+                        catsPosition[fullCats].y = imagePoint.y;
+                        
+                        ImageDrawPixel(&imMaze, catsPosition[fullCats].x, catsPosition[fullCats].y, RED);
+                        
                         fullCats++;
-                        if(fullCats > MAX_CATS) fullCats = 0;
+                        if(fullCats >= MAX_CATS) fullCats = 0;
                     }
                     
                     UnloadTexture(texMaze);
