@@ -1,0 +1,31 @@
+
+The following textures are licensed under a CC0 1.0 Universal.
+
+ - maze_atlas01.png
+ - maze_atlas02.png
+ - maze_atlas03.png
+ - maze_atlas04.png
+
+
+CC0 1.0 Universal
+
+By marking the work with a CC0 public domain dedication, the creator is giving up their copyright and allowing reusers to distribute, remix, adapt, and build upon the material in any medium or format, even for commercial purposes.
+
+CC0: This work has been marked as dedicated to the public domain.
+
+Canonical URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+Music by fonoskop, freesound under the licence of https://creativecommons.org/licenses/by/4.0/ , no changes has been made
+
+
+License cat box, by ToffeeCraft on itch.io
+
+ - For personal use. - It can be used and edit freely. - Not redistribute or resell this assets. - It can be used for game development and other productions. 
+
+License cat player, by OboroPixel on itch.io
+
+You can use this asset for personal and commercial purpose,
+you can modify this object to your needs.
+Credit is not required but would be appreciated
+
+You can NOT redistribute or resell it.
