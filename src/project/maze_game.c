@@ -409,7 +409,7 @@ int main(void)
             }
             else if (scene == 1)
             {
-                DrawText(TextFormat("SCORE: [%i]", score), 20, GetScreenHeight() - 30, 20, DARKBLUE); // score display
+                
                 BeginMode2D(camera);
                 
                 for (int y = 0; y < im_maze.height; y++)
@@ -461,7 +461,7 @@ int main(void)
                 }
                 
                 EndMode2D();
-                
+                DrawText(TextFormat("SCORE: [%i]", score), 20, GetScreenHeight() - 30, 20, WHITE); // score display
                 DrawText("GAME MODE", 10, 10, 20, BLACK);
                 
                 
